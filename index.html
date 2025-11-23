@@ -3,54 +3,35 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Hey India — Vision Assistant (Web Demo)</title>
-
+  <title>Auto Vision Assistant</title>
   <link rel="stylesheet" href="style.css" />
 
   <!-- TensorFlow.js + COCO-SSD -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
 </head>
+
 <body>
-  <main class="wrap">
-    <div class="card" role="region" aria-labelledby="title">
-      <div class="card-inner">
-        <h1 id="title">Hey India — Vision Assistant</h1>
-        <p class="subtitle">Say <strong>"Hey India"</strong> to start. Then ask: <em>"What is in front of me?"</em></p>
+  <main class="container">
+    <header>
+      <h1>Auto Vision Assistant</h1>
+      <p class="hint">Camera will automatically identify what it sees and speak it aloud.</p>
+    </header>
 
-        <div class="status" aria-live="polite">
-          <div class="status-line">
-            <span class="dot" id="status-dot"></span>
-            <span id="status-text">idle</span>
-          </div>
-          <div id="last-response" class="last-response" aria-atomic="true"></div>
-        </div>
+    <section class="status-panel" aria-live="polite">
+      <div id="status">Status: <span id="status-text">idle</span></div>
+      <div id="last-response" class="last-response"></div>
+    </section>
 
-        <div class="controls">
-          <button id="start-btn" class="btn primary">Start Listening</button>
-          <button id="stop-btn" class="btn" disabled>Stop</button>
-          <label class="toggle">
-            <input id="continuous-toggle" type="checkbox" checked>
-            <span class="toggle-slider"></span>
-            <span class="toggle-label">Continuous Wake Listening</span>
-          </label>
-        </div>
-
-        <div class="note">
-          <small>Demo runs entirely in your browser. Best in Chrome (desktop or Android). Allow Camera & Microphone when prompted.</small>
-        </div>
-      </div>
-    </div>
-
-    <!-- hidden visual camera preview for accessibility/testing -->
-    <div class="camera-hidden">
+    <section class="camera-panel">
       <video id="video" autoplay playsinline muted></video>
       <canvas id="capture-canvas" width="640" height="480" hidden></canvas>
-    </div>
-  </main>
+    </section>
 
-  <!-- ding sound -->
-  <audio id="ding" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
+    <footer class="footer">
+      <small>Uses TensorFlow.js COCO-SSD — Works best in Chrome.</small>
+    </footer>
+  </main>
 
   <script src="script.js" defer></script>
 </body>
