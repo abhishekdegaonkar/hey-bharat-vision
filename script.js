@@ -1,5 +1,5 @@
 /* script.js
-   Hey Bharat — Browser demo
+   Hey India — Browser demo (updated)
    - Uses Web Speech API for wake word
    - Uses TensorFlow.js coco-ssd for object detection
    - Speaks results using SpeechSynthesis
@@ -11,8 +11,17 @@ let listening = false;
 let active = false; // active after wake word
 let continuousWake = true;
 let model = null;
-const WAKE_PHRASE = "hey bharat";
-const COMMAND_KEYWORDS = ["what is in front of me", "describe", "what do you see", "identify", "look", "describe my surroundings"];
+const WAKE_PHRASE = "hey india";
+const COMMAND_KEYWORDS = [
+  "what is in front of me",
+  "describe",
+  "what do you see",
+  "identify",
+  "look",
+  "describe my surroundings",
+  "what's in front",
+  "tell me what you see"
+];
 
 const statusText = document.getElementById("status-text");
 const lastResponse = document.getElementById("last-response");
@@ -29,6 +38,7 @@ const PLANT_LABELS = new Set(["potted plant","plant","tree"]);
 
 // helper: update UI status
 function setStatus(s){
+  console.log("[Hey India] status:", s);
   statusText.textContent = s;
 }
 
@@ -42,6 +52,7 @@ function speak(text){
   speechSynthesis.cancel(); // stop previous
   speechSynthesis.speak(ut);
   lastResponse.textContent = text;
+  console.log("[Hey India] speak:", text);
 }
 
 // init camera
@@ -174,6 +185,7 @@ function startWakeRecognition(){
   recognition.onstart = () => {
     listening = true;
     setStatus("listening for wake phrase...");
+    console.log("[Hey India] recognition started");
   };
 
   recognition.onerror = (ev) => {
@@ -183,6 +195,7 @@ function startWakeRecognition(){
   recognition.onend = () => {
     listening = false;
     setStatus("stopped listening");
+    console.log("[Hey India] recognition ended");
     // if continuous mode and still active UI says start, restart it
     if(continuousWake && startBtn.disabled) {
       // restart automatically after short delay
