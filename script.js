@@ -1,62 +1,95 @@
-const video = document.getElementById("video");
 let model;
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const statusText = document.getElementById("status-text");
+
+// Text-to-Speech Setup
+const tts = window.speechSynthesis;
 let lastSpoken = "";
-let isSpeaking = false;
-
-async function initCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-  video.srcObject = stream;
-
-  return new Promise((resolve) => {
-    video.onloadedmetadata = () => resolve();
-  });
-}
+let speakingCooldown = false;
 
 function speak(text) {
-  if (isSpeaking || text === lastSpoken) return;
+  if (speakingCooldown || text === lastSpoken) return;
 
   const utter = new SpeechSynthesisUtterance(text);
-  isSpeaking = true;
+  utter.lang = "en-US";
 
-  utter.onend = () => {
-    isSpeaking = false;
-    lastSpoken = text;
-  };
+  tts.speak(utter);
+  lastSpoken = text;
 
-  speechSynthesis.speak(utter);
+  speakingCooldown = true;
+  setTimeout(() => (speakingCooldown = false), 2500);
 }
 
-async function detectObjects() {
+// Start Back Camera
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
+
+    video.srcObject = stream;
+
+    video.onloadedmetadata = () => {
+      video.play();
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    };
+  } catch (err) {
+    alert("Camera access denied or unsupported.");
+    console.error(err);
+  }
+}
+
+// Main Detection Loop
+async function detectFrame() {
+  if (!model) return;
+
   const predictions = await model.detect(video);
 
-  if (predictions.length === 0) {
-    speak("I do not see anything clearly.");
-    return;
-  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  let objects = predictions.map(p => p.class);
+  let detectedNames = [];
 
-  let sentence = "";
+  predictions.forEach(pred => {
+    const [x, y, w, h] = pred.bbox;
 
-  if (objects.length === 1) {
-    sentence = `I see a ${objects[0]}.`;
+    ctx.strokeStyle = "#00d4ff";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
+
+    ctx.fillStyle = "#00d4ff";
+    ctx.font = "18px Arial";
+    ctx.fillText(pred.class, x, y > 10 ? y - 5 : y + 20);
+
+    detectedNames.push(pred.class);
+  });
+
+  if (detectedNames.length > 0) {
+    const sentence = "I see " + detectedNames.join(", ");
+    speak(sentence);
+    statusText.innerText = sentence;
   } else {
-    sentence = `I see ${objects.length} objects: ${objects.join(", ")}.`;
+    statusText.innerText = "No objects detected";
   }
 
-  speak(sentence);
+  requestAnimationFrame(detectFrame);
 }
 
-async function main() {
-  document.getElementById("status-text").textContent = "Starting camera...";
-  await initCamera();
-
-  document.getElementById("status-text").textContent = "Loading AI model...";
+// Load Model
+async function init() {
+  statusText.innerText = "Loading TensorFlow model...";
   model = await cocoSsd.load();
+  statusText.innerText = "Model loaded. Starting camera...";
+  await startCamera();
 
-  document.getElementById("status-text").textContent = "Detecting objects...";
-
-  setInterval(detectObjects, 1500);
+  setTimeout(() => {
+    statusText.innerText = "Detecting objects...";
+    detectFrame();
+  }, 1500);
 }
 
-main();
+init();
