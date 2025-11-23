@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hey Bharat — Vision Assistant (Web Trial)</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- TensorFlow.js + COCO-SSD -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Hey Bharat — Vision Assistant (Web Demo)</h1>
+      <p class="hint">Say <strong>"Hey Bharat"</strong> to start. Then ask: <em>"What is in front of me?"</em></p>
+    </header>
+
+    <section class="status-panel" aria-live="polite">
+      <div id="status">Status: <span id="status-text">idle</span></div>
+      <div id="last-response" class="last-response"></div>
+    </section>
+
+    <section class="controls">
+      <button id="start-btn" class="primary">Start Listening</button>
+      <button id="stop-btn" class="secondary" disabled>Stop</button>
+      <label class="switch">
+        <input id="continuous-toggle" type="checkbox" checked>
+        <span class="slider"></span>
+        <span class="label-text">Continuous Wake Listening</span>
+      </label>
+    </section>
+
+    <section class="camera-panel">
+      <!-- video hidden visually but accessible -->
+      <video id="video" autoplay playsinline muted aria-hidden="true"></video>
+      <canvas id="capture-canvas" width="640" height="480" hidden></canvas>
+    </section>
+
+    <footer class="footer">
+      <small>Demo uses TensorFlow.js COCO-SSD (runs in browser). Works best in Chrome on desktop or Android.</small>
+    </footer>
+  </main>
+
+  <!-- Ding audio -->
+  <audio id="ding" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
