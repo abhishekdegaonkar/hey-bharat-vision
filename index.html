@@ -1,23 +1,37 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Camera Detection</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Vision Assistant (Web Demo)</title>
 
-    <!-- TensorFlow + COCO-SSD -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <link rel="stylesheet" href="style.css" />
 
-    <!-- Face API -->
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+  <!-- TensorFlow JS + COCO-SSD -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 </head>
+
 <body>
+  <main class="container">
+    <h1>Vision Assistant — Live Object Detection</h1>
+    <p class="hint">Camera opens automatically. It will speak everything it sees.</p>
 
-<h2>Universal Camera Detection</h2>
+    <div class="status">
+      <strong>Status:</strong> <span id="status-text">Loading model...</span>
+    </div>
 
-<video id="video" autoplay playsinline></video>
-<canvas id="canvas"></canvas>
+    <!-- Back Camera video -->
+    <video id="video" autoplay playsinline muted></video>
 
-<script src="script.js"></script>
+    <!-- Drawing bounding boxes -->
+    <canvas id="canvas"></canvas>
+
+    <footer>
+      <small>Powered by TensorFlow.js & COCO-SSD • Back Camera Enabled</small>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
 </body>
 </html>
