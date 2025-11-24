@@ -3,32 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Vision Assistant (Web Demo)</title>
-
+  <title>AI Vision Assistant</title>
   <link rel="stylesheet" href="style.css" />
 
-  <!-- TensorFlow JS + COCO-SSD -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
+  <!-- TFJS + COCO-SSD -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 </head>
 
 <body>
   <main class="container">
-    <h1>Vision Assistant — Live Object Detection</h1>
-    <p class="hint">Camera opens automatically. It will speak everything it sees.</p>
+    <h1>AI Vision Assistant</h1>
+    <p class="hint">Camera is ON — The assistant will describe everything it sees.</p>
 
-    <div class="status">
-      <strong>Status:</strong> <span id="status-text">Loading model...</span>
-    </div>
-
-    <!-- Back Camera video -->
-    <video id="video" autoplay playsinline muted></video>
-
-    <!-- Drawing bounding boxes -->
+    <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
 
+    <div class="status-box">
+      <span>Status:</span> <span id="status-text">Loading...</span>
+    </div>
+
     <footer>
-      <small>Powered by TensorFlow.js & COCO-SSD • Back Camera Enabled</small>
+      Works best on Chrome (Android or Desktop)
     </footer>
   </main>
 
