@@ -1,88 +1,96 @@
+let model;
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-let objectModel;
+const statusText = document.getElementById("status-text");
 
-// Start Camera
+// Text-to-Speech Setup
+const tts = window.speechSynthesis;
+let lastSpoken = "";
+let speakingCooldown = false;
+
+function speak(text) {
+  if (speakingCooldown || text === lastSpoken) return;
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "en-US";
+
+  tts.speak(utter);
+  lastSpoken = text;
+
+  speakingCooldown = true;
+  setTimeout(() => (speakingCooldown = false), 2500);
+}
+
+// Start Back Camera
 async function startCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: "environment" } } // Back cam on mobile
-        });
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
 
-        video.srcObject = stream;
-    } catch (err) {
-        alert("Camera access blocked or not available!");
-    }
-}
+    video.srcObject = stream;
 
-// Load AI Models
-async function loadModels() {
-    objectModel = await cocoSsd.load();
-
-    await faceapi.nets.tinyFaceDetector.loadFromUri(
-        "https://justadomain2.github.io/models/"
-    );
-    await faceapi.nets.faceExpressionNet.loadFromUri(
-        "https://justadomain2.github.io/models/"
-    );
-}
-
-function isLivingBeing(name) {
-    const living = ["person", "cat", "dog", "bird", "horse", "sheep", "cow"];
-    return living.includes(name.toLowerCase());
+    video.onloadedmetadata = () => {
+      video.play();
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    };
+  } catch (err) {
+    alert("Camera access denied or unsupported.");
+    console.error(err);
+  }
 }
 
 // Main Detection Loop
-async function detect() {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+async function detectFrame() {
+  if (!model) return;
 
-    // Object detection
-    const predictions = await objectModel.detect(video);
+  const predictions = await model.detect(video);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(video, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    predictions.forEach(pred => {
-        const [x, y, w, h] = pred.bbox;
+  let detectedNames = [];
 
-        // living being → green, object → blue
-        ctx.strokeStyle = isLivingBeing(pred.class) ? "lime" : "cyan";
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x, y, w, h);
+  predictions.forEach(pred => {
+    const [x, y, w, h] = pred.bbox;
 
-        ctx.fillStyle = "yellow";
-        ctx.font = "18px Arial";
-        ctx.fillText(pred.class, x, y - 5);
-    });
+    ctx.strokeStyle = "#00d4ff";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
 
-    // Face + emotion detection
-    const face = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-        .withFaceExpressions();
+    ctx.fillStyle = "#00d4ff";
+    ctx.font = "18px Arial";
+    ctx.fillText(pred.class, x, y > 10 ? y - 5 : y + 20);
 
-    if (face) {
-        const box = face.detection.box;
-        ctx.strokeStyle = "lime";
-        ctx.strokeRect(box.x, box.y, box.width, box.height);
+    detectedNames.push(pred.class);
+  });
 
-        const emotion = Object.entries(face.expressions)
-            .sort((a, b) => b[1] - a[1])[0][0];
+  if (detectedNames.length > 0) {
+    const sentence = "I see " + detectedNames.join(", ");
+    speak(sentence);
+    statusText.innerText = sentence;
+  } else {
+    statusText.innerText = "No objects detected";
+  }
 
-        ctx.fillStyle = "red";
-        ctx.fillText("Emotion: " + emotion, box.x, box.y - 10);
-    }
-
-    requestAnimationFrame(detect);
+  requestAnimationFrame(detectFrame);
 }
 
-// Initialize
+// Load Model
 async function init() {
-    await startCamera();
-    await loadModels();
-    detect();
+  statusText.innerText = "Loading TensorFlow model...";
+  model = await cocoSsd.load();
+  statusText.innerText = "Model loaded. Starting camera...";
+  await startCamera();
+
+  setTimeout(() => {
+    statusText.innerText = "Detecting objects...";
+    detectFrame();
+  }, 1500);
 }
 
 init();
+
