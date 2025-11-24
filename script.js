@@ -2,28 +2,36 @@ let model;
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-
 const statusText = document.getElementById("status-text");
 
-// Text-to-Speech Setup
+// Speech settings
 const tts = window.speechSynthesis;
 let lastSpoken = "";
-let speakingCooldown = false;
+let cooldown = false;
 
+// Speak function
 function speak(text) {
-  if (speakingCooldown || text === lastSpoken) return;
-
+  if (cooldown || text === lastSpoken) return;
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = "en-US";
-
   tts.speak(utter);
-  lastSpoken = text;
 
-  speakingCooldown = true;
-  setTimeout(() => (speakingCooldown = false), 2500);
+  lastSpoken = text;
+  cooldown = true;
+  setTimeout(() => (cooldown = false), 2500);
 }
 
-// Start Back Camera
+// Smart activity detector (simple rule-based)
+function guessActivity(obj) {
+  if (obj.class === "person") {
+    if (obj.bbox[3] > obj.bbox[2] * 1.4) return "is standing";
+    if (obj.bbox[2] > obj.bbox[3]) return "is lying down";
+    return "is sitting";
+  }
+  return "";
+}
+
+// Start back camera
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -39,57 +47,67 @@ async function startCamera() {
       canvas.height = video.videoHeight;
     };
   } catch (err) {
-    alert("Camera access denied or unsupported.");
+    alert("Camera access blocked!");
     console.error(err);
   }
 }
 
-// Main Detection Loop
-async function detectFrame() {
+// Main detection loop
+async function detectLoop() {
   if (!model) return;
 
-  const predictions = await model.detect(video);
+  const preds = await model.detect(video);
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  let detectedNames = [];
+  let names = [];
+  let humans = 0;
 
-  predictions.forEach(pred => {
-    const [x, y, w, h] = pred.bbox;
+  preds.forEach(p => {
+    const [x, y, w, h] = p.bbox;
 
     ctx.strokeStyle = "#00d4ff";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.strokeRect(x, y, w, h);
+
+    const label = p.class;
+    const activity = guessActivity(p);
 
     ctx.fillStyle = "#00d4ff";
     ctx.font = "18px Arial";
-    ctx.fillText(pred.class, x, y > 10 ? y - 5 : y + 20);
+    ctx.fillText(label, x, y - 5);
 
-    detectedNames.push(pred.class);
+    names.push(label + (activity ? " (" + activity + ")" : ""));
+
+    if (label === "person") humans++;
   });
 
-  if (detectedNames.length > 0) {
-    const sentence = "I see " + detectedNames.join(", ");
-    speak(sentence);
-    statusText.innerText = sentence;
+  if (names.length > 0) {
+    let text = "";
+
+    if (humans > 0) text += `${humans} people detected. `;
+    text += "I see " + names.join(", ");
+
+    speak(text);
+    statusText.innerText = text;
   } else {
     statusText.innerText = "No objects detected";
   }
 
-  requestAnimationFrame(detectFrame);
+  requestAnimationFrame(detectLoop);
 }
 
-// Load Model
+// Init everything
 async function init() {
-  statusText.innerText = "Loading TensorFlow model...";
+  statusText.innerText = "Loading model...";
   model = await cocoSsd.load();
-  statusText.innerText = "Model loaded. Starting camera...";
+  statusText.innerText = "Model Loaded. Starting camera...";
   await startCamera();
 
   setTimeout(() => {
-    statusText.innerText = "Detecting objects...";
-    detectFrame();
-  }, 1500);
+    statusText.innerText = "Detecting...";
+    detectLoop();
+  }, 1200);
 }
 
 init();
