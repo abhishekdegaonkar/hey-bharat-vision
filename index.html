@@ -1,33 +1,23 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Vision Assistant</title>
-  <link rel="stylesheet" href="style.css" />
+    <title>Camera Detection</title>
+    <link rel="stylesheet" href="style.css">
 
-  <!-- TFJS + COCO-SSD -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <!-- TensorFlow + COCO-SSD -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+    <!-- Face API -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
 </head>
-
 <body>
-  <main class="container">
-    <h1>AI Vision Assistant</h1>
-    <p class="hint">Camera is ON — The assistant will describe everything it sees.</p>
 
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
+<h2>Universal Camera Detection</h2>
 
-    <div class="status-box">
-      <span>Status:</span> <span id="status-text">Loading...</span>
-    </div>
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
 
-    <footer>
-      Works best on Chrome (Android or Desktop)
-    </footer>
-  </main>
-
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
