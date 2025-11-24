@@ -1,44 +1,31 @@
-:root {
-  --bg: #0f1724;
-  --card: #101a2b;
-  --accent: #00d4ff;
-  --text: #e6eef6;
-  --muted: #94a3b8;
-}
-
 body {
   margin: 0;
   padding: 20px;
-  background: var(--bg);
+  background: #0f1724;
+  color: #e6eef6;
   font-family: Arial, sans-serif;
-  color: var(--text);
   display: flex;
   justify-content: center;
 }
 
 .container {
-  max-width: 900px;
   width: 100%;
-  background: var(--card);
+  max-width: 900px;
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  background: #101a2b;
+  border-radius: 14px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.5);
 }
 
 h1 {
   margin-top: 0;
 }
 
-.hint {
-  color: var(--muted);
-}
-
 video {
   width: 100%;
-  max-width: 700px;
-  border-radius: 10px;
+  border-radius: 12px;
   margin-top: 15px;
-  border: 2px solid var(--accent);
+  border: 2px solid #00d4ff;
 }
 
 canvas {
@@ -47,9 +34,17 @@ canvas {
   left: 0;
 }
 
+.status-box {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #162335;
+  font-size: 1.1rem;
+}
+
 footer {
   margin-top: 15px;
-  color: var(--muted);
-  font-size: 0.9rem;
   text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
 }
