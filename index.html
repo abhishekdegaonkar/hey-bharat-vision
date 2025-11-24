@@ -1,33 +1,177 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Vision Assistant</title>
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- TFJS + COCO-SSD -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+<title>Smart Camera Detection</title>
+<style>
+  body { background:#000; margin:0; overflow:hidden; }
+  #video { width:100vw; height:100vh; object-fit:cover; }
+  #canvas { position:absolute; left:0; top:0; width:100vw; height:100vh; }
+  .label {
+    position:absolute; 
+    padding:4px 8px; 
+    background:rgba(0,0,0,0.6); 
+    color:#fff; 
+    border-radius:4px;
+    font-size:14px;
+  }
+</style>
 </head>
 
 <body>
-  <main class="container">
-    <h1>AI Vision Assistant</h1>
-    <p class="hint">Camera is ON — The assistant will describe everything it sees.</p>
 
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
 
-    <div class="status-box">
-      <span>Status:</span> <span id="status-text">Loading...</span>
-    </div>
+<script type="module">
 
-    <footer>
-      Works best on Chrome (Android or Desktop)
-    </footer>
-  </main>
+// ─────────────────────────────────────────────
+// IMPORT MEDIAPIPE TASK MODELS
+// ─────────────────────────────────────────────
 
-  <script src="script.js"></script>
+import {
+  FilesetResolver,
+  ObjectDetector
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
+
+import {
+  FaceDetector
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
+
+import {
+  FaceLandmarker
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
+
+
+// ─────────────────────────────────────────────
+// CAMERA SETUP
+// ─────────────────────────────────────────────
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: { exact: "environment" } },   // BACK CAMERA ONLY
+  audio: false
+})
+.then(stream => { video.srcObject = stream; })
+.catch(err => {
+  alert("Back camera not found. Try on mobile phone.");
+});
+
+
+// Resize canvas after video loads
+video.addEventListener("loadeddata", () => {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  startDetection();
+});
+
+
+// ─────────────────────────────────────────────
+// LOAD MODELS
+// ─────────────────────────────────────────────
+
+let objectDetector, faceDetector;
+
+async function loadModels() {
+
+  const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+  );
+
+  objectDetector = await ObjectDetector.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float32/1/object_detector.bin"
+    },
+    scoreThreshold: 0.5
+  });
+
+  faceDetector = await FaceDetector.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_detector/short_range/float32/1/face_detector.bin"
+    }
+  });
+
+  console.log("All models loaded successfully");
+}
+
+loadModels();
+
+
+// ─────────────────────────────────────────────
+// DRAW BOX FUNCTION
+// ─────────────────────────────────────────────
+
+function drawBox(x, y, w, h, color, label) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x, y, w, h);
+
+  ctx.fillStyle = color;
+  ctx.font = "22px Arial";
+  ctx.fillText(label, x + 5, y - 5);
+}
+
+
+// ─────────────────────────────────────────────
+// DETECTION LOOP
+// ─────────────────────────────────────────────
+
+async function startDetection() {
+  await loadModels();
+
+  async function detect() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // OBJECT DETECTION
+    const objResults = objectDetector.detect(video);
+
+    objResults.detections.forEach(det => {
+      const [x1, y1, x2, y2] = det.boundingBox;
+      const w = x2 - x1;
+      const h = y2 - y1;
+
+      const label = det.categories[0].categoryName;
+
+      // Living beings → green
+      if (["person", "cat", "dog", "bird"].includes(label.toLowerCase())) {
+        drawBox(x1, y1, w, h, "lime", `Living: ${label}`);
+      } else {
+        drawBox(x1, y1, w, h, "cyan", `Object: ${label}`);
+      }
+    });
+
+
+    // FACE DETECTION
+    const faceResults = faceDetector.detect(video);
+
+    faceResults.detections.forEach(face => {
+      const [x1, y1, x2, y2] = face.boundingBox;
+      const w = x2 - x1;
+      const h = y2 - y1;
+
+      drawBox(x1, y1, w, h, "yellow", "Human Face");
+
+      // SIMPLE FACE ACTIVITY LOGIC
+      let activity = "Neutral";
+
+      // TEMP basic demo logic (advanced emotion requires classifier model)
+      if (h > w * 1.5) activity = "Looking Down";
+      else if (w > h * 1.3) activity = "Looking Side";
+      else activity = "Normal Face";
+
+      ctx.fillStyle = "yellow";
+      ctx.fillText(activity, x1, y2 + 20);
+    });
+
+    requestAnimationFrame(detect);
+  }
+
+  detect();
+}
+
+</script>
+
 </body>
 </html>
