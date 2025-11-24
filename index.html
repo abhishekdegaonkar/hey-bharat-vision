@@ -1,91 +1,33 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-<title>Smartphone Object & Face Detector</title>
-<style>
-  body { margin:0; overflow:hidden; background:#000; }
-  video, canvas { position:absolute; top:0; left:0; width:100vw; height:100vh; object-fit:cover; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Vision Assistant</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- TFJS + COCO-SSD -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 </head>
 
 <body>
+  <main class="container">
+    <h1>AI Vision Assistant</h1>
+    <p class="hint">Camera is ON — The assistant will describe everything it sees.</p>
 
-<video id="video" autoplay playsinline></video>
-<canvas id="canvas"></canvas>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
 
-<!-- TensorFlow.js -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.18.0"></script>
+    <div class="status-box">
+      <span>Status:</span> <span id="status-text">Loading...</span>
+    </div>
 
-<!-- COCO-SSD object detection -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <footer>
+      Works best on Chrome (Android or Desktop)
+    </footer>
+  </main>
 
-<!-- Face API for face & emotions -->
-<script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
-
-<script>
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-let objectModel;
-let faceModelReady = false;
-
-// ------------------------------
-// START BACK CAMERA
-// ------------------------------
-async function startCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { exact: "environment" }  // back camera
-      }
-    });
-    video.srcObject = stream;
-  } catch (err) {
-    alert("Back camera not found. Try on phone or allow permissions.");
-  }
-}
-
-startCamera();
-
-// ------------------------------
-// LOAD MODELS
-// ------------------------------
-async function loadModels() {
-  objectModel = await cocoSsd.load();
-  console.log("Object model loaded");
-
-  await faceapi.nets.tinyFaceDetector.loadFromUri("https://cdn.jsdelivr.net/npm/face-api.js/models");
-  await faceapi.nets.faceExpressionNet.loadFromUri("https://cdn.jsdelivr.net/npm/face-api.js/models");
-  faceModelReady = true;
-
-  console.log("Face model loaded");
-}
-
-loadModels();
-
-video.addEventListener("loadeddata", () => {
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  detectLoop();
-});
-
-// ------------------------------
-// DETECTION LOOP
-// ------------------------------
-async function detectLoop() {
-  if (objectModel) {
-    const predictions = await objectModel.detect(video);
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    predictions.forEach(pred => {
-      const [x, y, w, h] = pred.bbox;
-      const label = pred.class;
-
-      // Living beings → green
-      const living = ["person", "cat", "dog", "bird"];
-
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = living.includes(label) ? "lime" : "cyan";
-      ctx.strokeRect(x, y, w, h);
+  <script src="script.js"></script>
+</body>
+</html>
