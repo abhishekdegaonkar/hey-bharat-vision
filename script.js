@@ -1,29 +1,65 @@
+// =============================
+// AI Vision Assistant — Advanced
+// Multi-language + Object Count
+// =============================
+
 let model;
+
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-
 const statusText = document.getElementById("status-text");
 
-// Text-to-Speech Setup
-const tts = window.speechSynthesis;
-let lastSpoken = "";
-let speakingCooldown = false;
+// ---------- Language Settings ----------
+let currentLang = "en-US"; // change: hi-IN, mr-IN, en-US
 
-function speak(text) {
-  if (speakingCooldown || text === lastSpoken) return;
-
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "en-US";
-
-  tts.speak(utter);
-  lastSpoken = text;
-
-  speakingCooldown = true;
-  setTimeout(() => (speakingCooldown = false), 2500);
+function setLanguage(langCode) {
+  currentLang = langCode;
 }
 
-// Start Back Camera
+// ---------- Speech ----------
+const tts = window.speechSynthesis;
+let lastSentence = "";
+let lastSpeakTime = 0;
+
+function speak(text) {
+  const now = Date.now();
+  if (text === lastSentence && now - lastSpeakTime < 3000) return;
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = currentLang;
+  utter.rate = 1;
+
+  tts.cancel();
+  tts.speak(utter);
+
+  lastSentence = text;
+  lastSpeakTime = now;
+}
+
+// ---------- Grammar helper ----------
+function pluralize(word, count) {
+  if (count === 1) return word;
+
+  if (word === "person") return "people";
+  if (word.endsWith("s")) return word;
+  return word + "s";
+}
+
+function buildSentence(countMap) {
+  const parts = [];
+
+  for (const name in countMap) {
+    const count = countMap[name];
+    parts.push(count + " " + pluralize(name, count));
+  }
+
+  if (parts.length === 0) return "I see nothing";
+
+  return "I see " + parts.join(", ");
+}
+
+// ---------- Camera ----------
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -33,28 +69,38 @@ async function startCamera() {
 
     video.srcObject = stream;
 
-    video.onloadedmetadata = () => {
-      video.play();
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-    };
+    await new Promise(resolve => {
+      video.onloadedmetadata = () => resolve();
+    });
+
+    await video.play();
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
   } catch (err) {
-    alert("Camera access denied or unsupported.");
+    alert("Camera access denied or unsupported");
     console.error(err);
+    statusText.innerText = "Camera error";
   }
 }
 
-// Main Detection Loop
+// ---------- Detection Loop ----------
 async function detectFrame() {
-  if (!model) return;
+  if (!model || video.readyState !== 4) {
+    requestAnimationFrame(detectFrame);
+    return;
+  }
 
   const predictions = await model.detect(video);
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  let detectedNames = [];
+  const countMap = {};
 
   predictions.forEach(pred => {
+    if (pred.score < 0.6) return;
+
     const [x, y, w, h] = pred.bbox;
 
     ctx.strokeStyle = "#00d4ff";
@@ -63,33 +109,39 @@ async function detectFrame() {
 
     ctx.fillStyle = "#00d4ff";
     ctx.font = "18px Arial";
-    ctx.fillText(pred.class, x, y > 10 ? y - 5 : y + 20);
+    ctx.fillText(
+      pred.class + " " + Math.round(pred.score * 100) + "%",
+      x,
+      y > 10 ? y - 5 : y + 20
+    );
 
-    detectedNames.push(pred.class);
+    countMap[pred.class] = (countMap[pred.class] || 0) + 1;
   });
 
-  if (detectedNames.length > 0) {
-    const sentence = "I see " + detectedNames.join(", ");
-    speak(sentence);
-    statusText.innerText = sentence;
-  } else {
-    statusText.innerText = "No objects detected";
-  }
+  const sentence = buildSentence(countMap);
+  statusText.innerText = sentence;
+  speak(sentence);
 
   requestAnimationFrame(detectFrame);
 }
 
-// Load Model
+// ---------- Init ----------
 async function init() {
-  statusText.innerText = "Loading TensorFlow model...";
+  statusText.innerText = "Loading AI model...";
   model = await cocoSsd.load();
-  statusText.innerText = "Model loaded. Starting camera...";
+
+  statusText.innerText = "Starting camera...";
   await startCamera();
 
-  setTimeout(() => {
-    statusText.innerText = "Detecting objects...";
-    detectFrame();
-  }, 1500);
+  statusText.innerText = "Detecting objects...";
+  detectFrame();
 }
 
+// ---------- Start ----------
 init();
+
+
+// ---------- OPTIONAL: Change language examples ----------
+// setLanguage("hi-IN"); // Hindi
+// setLanguage("mr-IN"); // Marathi
+// setLanguage("en-US"); // English
