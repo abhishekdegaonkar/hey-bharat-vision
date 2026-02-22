@@ -6,7 +6,7 @@ const ctx = canvas.getContext("2d");
 const statusText = document.getElementById("status-text");
 
 // -------- Language --------
-let currentLang = "en-US";
+let currentLang = "en-US"; // en-US | hi-IN | mr-IN
 
 function setLanguage(langCode) {
   currentLang = langCode;
@@ -23,6 +23,7 @@ function speak(text) {
 
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = currentLang;
+  utter.rate = 1;
 
   tts.cancel();
   tts.speak(utter);
@@ -125,9 +126,7 @@ async function detectFrame() {
 
   const parts = [];
   for (const name in countMap) {
-    parts.push(
-      countMap[name] + " " + pluralize(name, countMap[name])
-    );
+    parts.push(countMap[name] + " " + pluralize(name, countMap[name]));
   }
 
   const sentence =
@@ -145,6 +144,8 @@ async function detectFrame() {
 async function init() {
   statusText.innerText = "Loading AI model...";
   model = await cocoSsd.load();
+
+  speak("Welcome to Hey Bharat Vision");
 
   statusText.innerText = "Starting camera...";
   await startCamera();
