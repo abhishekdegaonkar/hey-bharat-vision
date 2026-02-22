@@ -1,8 +1,3 @@
-// =============================
-// AI Vision Assistant — Advanced
-// Multi-language + Object Count
-// =============================
-
 let model;
 
 const video = document.getElementById("video");
@@ -10,14 +5,14 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const statusText = document.getElementById("status-text");
 
-// ---------- Language Settings ----------
-let currentLang = "en-US"; // change: hi-IN, mr-IN, en-US
+// -------- Language --------
+let currentLang = "en-US";
 
 function setLanguage(langCode) {
   currentLang = langCode;
 }
 
-// ---------- Speech ----------
+// -------- Speech --------
 const tts = window.speechSynthesis;
 let lastSentence = "";
 let lastSpeakTime = 0;
@@ -28,7 +23,6 @@ function speak(text) {
 
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = currentLang;
-  utter.rate = 1;
 
   tts.cancel();
   tts.speak(utter);
@@ -37,29 +31,25 @@ function speak(text) {
   lastSpeakTime = now;
 }
 
-// ---------- Grammar helper ----------
+// -------- Grammar --------
 function pluralize(word, count) {
   if (count === 1) return word;
-
   if (word === "person") return "people";
   if (word.endsWith("s")) return word;
   return word + "s";
 }
 
-function buildSentence(countMap) {
-  const parts = [];
+// -------- Distance --------
+function getDistanceLevel(width, videoWidth) {
+  const ratio = width / videoWidth;
 
-  for (const name in countMap) {
-    const count = countMap[name];
-    parts.push(count + " " + pluralize(name, count));
-  }
-
-  if (parts.length === 0) return "I see nothing";
-
-  return "I see " + parts.join(", ");
+  if (ratio > 0.65) return "very close";
+  if (ratio > 0.45) return "close";
+  if (ratio < 0.20) return "far";
+  return "medium distance";
 }
 
-// ---------- Camera ----------
+// -------- Camera --------
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -79,13 +69,12 @@ async function startCamera() {
     canvas.height = video.videoHeight;
 
   } catch (err) {
-    alert("Camera access denied or unsupported");
+    alert("Camera access denied");
     console.error(err);
-    statusText.innerText = "Camera error";
   }
 }
 
-// ---------- Detection Loop ----------
+// -------- Detection --------
 async function detectFrame() {
   if (!model || video.readyState !== 4) {
     requestAnimationFrame(detectFrame);
@@ -93,39 +82,66 @@ async function detectFrame() {
   }
 
   const predictions = await model.detect(video);
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const countMap = {};
+  let personCount = 0;
+  let danger = false;
 
   predictions.forEach(pred => {
     if (pred.score < 0.6) return;
 
     const [x, y, w, h] = pred.bbox;
+    const distance = getDistanceLevel(w, video.videoWidth);
 
-    ctx.strokeStyle = "#00d4ff";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = distance === "very close" ? "red" : "#00d4ff";
+    ctx.lineWidth = 3;
     ctx.strokeRect(x, y, w, h);
 
-    ctx.fillStyle = "#00d4ff";
+    ctx.fillStyle = ctx.strokeStyle;
     ctx.font = "18px Arial";
     ctx.fillText(
-      pred.class + " " + Math.round(pred.score * 100) + "%",
+      `${pred.class} (${distance})`,
       x,
       y > 10 ? y - 5 : y + 20
     );
 
     countMap[pred.class] = (countMap[pred.class] || 0) + 1;
+
+    if (pred.class === "person") {
+      personCount++;
+      if (distance === "very close") {
+        danger = true;
+        speak("Warning! Person is very close");
+      }
+    }
   });
 
-  const sentence = buildSentence(countMap);
+  if (personCount > 3) {
+    speak("Alert! More than three people detected");
+  }
+
+  canvas.style.boxShadow = danger ? "0 0 40px red" : "none";
+
+  const parts = [];
+  for (const name in countMap) {
+    parts.push(
+      countMap[name] + " " + pluralize(name, countMap[name])
+    );
+  }
+
+  const sentence =
+    parts.length > 0
+      ? "I see " + parts.join(", ")
+      : "I see nothing";
+
   statusText.innerText = sentence;
   speak(sentence);
 
   requestAnimationFrame(detectFrame);
 }
 
-// ---------- Init ----------
+// -------- Init --------
 async function init() {
   statusText.innerText = "Loading AI model...";
   model = await cocoSsd.load();
@@ -137,11 +153,4 @@ async function init() {
   detectFrame();
 }
 
-// ---------- Start ----------
 init();
-
-
-// ---------- OPTIONAL: Change language examples ----------
-// setLanguage("hi-IN"); // Hindi
-// setLanguage("mr-IN"); // Marathi
-// setLanguage("en-US"); // English
