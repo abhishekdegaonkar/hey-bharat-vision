@@ -1,31 +1,35 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hey Bharat Vision</title>
 
-  <link rel="stylesheet" href="style.css" />
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
 
-  <!-- TensorFlow JS + COCO-SSD -->
+  <!-- TensorFlow -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 </head>
-
 <body>
+
   <main class="container">
-    <h1>HEY BHARAT VISION — Live Object Detection</h1>
-    <p class="hint">I am your digital eyes 👁️</p>
+    <h1>Hey Bharat Vision</h1>
+    <p class="hint">Live Object Detection with Distance & Safety Alerts</p>
 
     <div class="status">
-      <strong>Status:</strong> <span id="status-text">Loading...</span>
+      <strong>Status:</strong>
+      <span id="status-text">Loading...</span>
     </div>
 
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas"></canvas>
+    <div class="video-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+    </div>
 
     <footer>
-      <small>Powered by TensorFlow.js • Multi-language • Distance Warning</small>
+      Powered by TensorFlow.js & COCO-SSD
     </footer>
   </main>
 
