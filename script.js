@@ -19,7 +19,7 @@ let lastSpeakTime = 0;
 
 function speak(text) {
   const now = Date.now();
-  if (text === lastSentence && now - lastSpeakTime < 3000) return;
+  if (text === lastSentence && now - lastSpeakTime < 2500) return;
 
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = currentLang;
@@ -30,6 +30,20 @@ function speak(text) {
 
   lastSentence = text;
   lastSpeakTime = now;
+}
+
+// -------- Greeting Based on Time --------
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+}
+
+function speakWelcome() {
+  const greeting = getGreeting();
+  speak(`Hello, ${greeting}. I am Hey Bharat Vision. I am your digital eyes.`);
 }
 
 // -------- Grammar --------
@@ -47,7 +61,7 @@ function getDistanceLevel(width, videoWidth) {
   if (ratio > 0.65) return "very close";
   if (ratio > 0.45) return "close";
   if (ratio < 0.20) return "far";
-  return "medium distance";
+  return "at medium distance";
 }
 
 // -------- Camera --------
@@ -86,8 +100,7 @@ async function detectFrame() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const countMap = {};
-  let personCount = 0;
-  let danger = false;
+  const distanceMap = {};
 
   predictions.forEach(pred => {
     if (pred.score < 0.6) return;
@@ -107,35 +120,49 @@ async function detectFrame() {
       y > 10 ? y - 5 : y + 20
     );
 
+    // Count objects
     countMap[pred.class] = (countMap[pred.class] || 0) + 1;
 
-    if (pred.class === "person") {
-      personCount++;
-      if (distance === "very close") {
-        danger = true;
-        speak("Warning! Person is very close");
-      }
+    // Track closest distance for each object type
+    if (!distanceMap[pred.class] || distance === "very close") {
+      distanceMap[pred.class] = distance;
     }
   });
 
-  if (personCount > 3) {
-    speak("Alert! More than three people detected");
-  }
+  // Build Speech Sentence
+  let speechParts = [];
 
-  canvas.style.boxShadow = danger ? "0 0 40px red" : "none";
-
-  const parts = [];
   for (const name in countMap) {
-    parts.push(countMap[name] + " " + pluralize(name, countMap[name]));
+    const count = countMap[name];
+    const distance = distanceMap[name];
+
+    const objectName = pluralize(name, count);
+
+    if (distance === "very close") {
+      speechParts.push(`${count} ${objectName} ${count > 1 ? "are" : "is"} very close`);
+    } else if (distance === "close") {
+      speechParts.push(`${count} ${objectName} ${count > 1 ? "are" : "is"} close`);
+    }
   }
 
-  const sentence =
-    parts.length > 0
-      ? "I see " + parts.join(", ")
+  // Normal detection sentence
+  const normalParts = [];
+  for (const name in countMap) {
+    normalParts.push(countMap[name] + " " + pluralize(name, countMap[name]));
+  }
+
+  const normalSentence =
+    normalParts.length > 0
+      ? "I see " + normalParts.join(", ")
       : "I see nothing";
 
-  statusText.innerText = sentence;
-  speak(sentence);
+  statusText.innerText = normalSentence;
+
+  if (speechParts.length > 0) {
+    speak(speechParts.join(". "));
+  } else {
+    speak(normalSentence);
+  }
 
   requestAnimationFrame(detectFrame);
 }
@@ -145,7 +172,7 @@ async function init() {
   statusText.innerText = "Loading AI model...";
   model = await cocoSsd.load();
 
-  speak("Welcome to Hey Bharat Vision");
+  speakWelcome(); // Greeting
 
   statusText.innerText = "Starting camera...";
   await startCamera();
